@@ -1,0 +1,80 @@
+### Health
+GET http://localhost:4000/health
+
+### Register Doctor
+POST http://localhost:4000/api/auth/register/doctor
+Content-Type: application/json
+
+{
+  "name": "Dr. Strange",
+  "email": "strange@example.com",
+  "password": "secret123",
+  "specialization": "Neurology"
+}
+
+### Login Doctor
+POST http://localhost:4000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "strange@example.com",
+  "password": "secret123",
+  "role": "doctor"
+}
+
+### Register Patient
+POST http://localhost:4000/api/auth/register/patient
+Content-Type: application/json
+
+{
+  "name": "Jane Roe",
+  "age": 29,
+  "email": "jane@example.com",
+  "password": "secret123",
+  "assignedDoctorId": "REPLACE"
+}
+
+### Login Patient
+POST http://localhost:4000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jane@example.com",
+  "password": "secret123",
+  "role": "patient"
+}
+
+### List Doctor Patients
+GET http://localhost:4000/api/doctor/patients
+Authorization: Bearer REPLACE
+
+### Patient Me
+GET http://localhost:4000/api/patient/me
+Authorization: Bearer REPLACE
+
+### Create Appointment (patient)
+POST http://localhost:4000/api/appointments
+Authorization: Bearer REPLACE
+Content-Type: application/json
+
+{
+  "doctorId": "REPLACE",
+  "datetime": "2025-11-30T10:00:00.000Z",
+  "reason": "Consult"
+}
+
+### Approve Appointment (doctor)
+PATCH http://localhost:4000/api/appointments/REPLACE/approve
+Authorization: Bearer REPLACE
+
+### Send Message
+POST http://localhost:4000/api/messages
+Authorization: Bearer REPLACE
+Content-Type: application/json
+
+{
+  "doctorId": "REPLACE",
+  "patientId": "REPLACE",
+  "content": "Hello",
+  "type": "text"
+}

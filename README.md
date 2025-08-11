@@ -1,73 +1,88 @@
-# Welcome to your Lovable project
+# Medical Backend (Node.js + Express + MongoDB)
 
-## Project info
+## Setup
 
-**URL**: https://lovable.dev/projects/2b8aee57-0317-47d7-8b21-cc4997fc36b0
+1. Copy `.env.example` to `.env` and set values
+2. Install dependencies
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/2b8aee57-0317-47d7-8b21-cc4997fc36b0) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm install
 ```
 
-**Edit a file directly in GitHub**
+3. Start the server
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run dev
+# or
+npm start
+```
 
-**Use GitHub Codespaces**
+Server runs on `http://localhost:${PORT||4000}`.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Auth Endpoints
 
-## What technologies are used for this project?
+- POST `/api/auth/register/doctor`
+- POST `/api/auth/register/patient`
+- POST `/api/auth/login`
 
-This project is built with:
+Headers: `Content-Type: application/json`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Role-based Access
 
-## How can I deploy this project?
+- Use `Authorization: Bearer <JWT>` for protected routes
+- Doctor-only routes under `/api/doctor`, `/api/analytics`, certain file uploads and appointment approvals
+- Patient-only routes under `/api/patient`
 
-Simply open [Lovable](https://lovable.dev/projects/2b8aee57-0317-47d7-8b21-cc4997fc36b0) and click on Share -> Publish.
+## File Uploads
 
-## Can I connect a custom domain to my Lovable project?
+- Use multipart/form-data with field `file` for uploads
+- Prescriptions: `/api/files/prescriptions/:patientId`
+- Reports: `/api/files/reports/:patientId`
 
-Yes, you can!
+## Sample cURL
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```bash
+# Register a doctor
+curl -sS -X POST http://localhost:4000/api/auth/register/doctor \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Dr. Ada","email":"ada@example.com","password":"secret123","specialization":"Cardiology"}'
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Login doctor
+export DOC_TOKEN=$(curl -sS -X POST http://localhost:4000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ada@example.com","password":"secret123","role":"doctor"}' | jq -r .token)
+
+# Create patient (doctor)
+curl -sS -X POST http://localhost:4000/api/doctor/patients \
+  -H "Authorization: Bearer $DOC_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"John Doe","age":34,"ongoingTreatment":"Physio","medicationSchedule":[{"name":"Ibuprofen","dosage":"200mg","frequency":"BID"}]}'
+
+# List my patients (doctor)
+curl -sS http://localhost:4000/api/doctor/patients \
+  -H "Authorization: Bearer $DOC_TOKEN"
+
+# Register patient with assignedDoctorId
+export DOCTOR_ID=$(curl -sS http://localhost:4000/api/doctor/patients -H "Authorization: Bearer $DOC_TOKEN" | jq -r '.[0].assignedDoctor')
+
+curl -sS -X POST http://localhost:4000/api/auth/register/patient \
+  -H 'Content-Type: application/json' \
+  -d "{\"name\":\"John Doe\",\"age\":34,\"email\":\"john@example.com\",\"password\":\"secret123\",\"assignedDoctorId\":\"$DOCTOR_ID\"}"
+
+# Login patient
+export PAT_TOKEN=$(curl -sS -X POST http://localhost:4000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"john@example.com","password":"secret123","role":"patient"}' | jq -r .token)
+
+# Patient books appointment
+curl -sS -X POST http://localhost:4000/api/appointments \
+  -H "Authorization: Bearer $PAT_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"doctorId":"REPLACE_DOCTOR_ID","datetime":"2025-12-20T10:00:00.000Z","reason":"Follow-up"}'
+
+# Doctor lists appointments
+curl -sS http://localhost:4000/api/appointments -H "Authorization: Bearer $DOC_TOKEN"
+
+# Messaging: send text
+curl -sS -X POST http://localhost:4000/api/messages \
+  -H "Authorization: Bearer $PAT_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"doctorId":"REPLACE_DOCTOR_ID","patientId":"REPLACE_PATIENT_ID","content":"Hello, doctor"}'
+```
